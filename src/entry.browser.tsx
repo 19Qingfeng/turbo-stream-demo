@@ -11,6 +11,8 @@ declare global {
 }
 
 const textDecoder = new TextDecoder();
+
+// 客户端揭码服务端返回的数据
 decode(
   window.__DATA__.pipeThrough(
     new TransformStream({

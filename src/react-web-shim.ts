@@ -49,6 +49,7 @@ export const renderToReadableStream: typeof renderToReadableStreamType = async (
   const { pipe, abort } = renderToPipeableStream(element, {
     ...rest,
     onShellReady() {
+      // 当 shell 准备好后，返回创建的 WebStreaming readable 对象
       shellReady.resolve(readable);
     },
     onAllReady() {
@@ -57,27 +58,31 @@ export const renderToReadableStream: typeof renderToReadableStreamType = async (
     onShellError(error) {
       allReady.reject(error);
       shellReady.reject(error);
-    },
+    }
   });
 
   let startedFlowing = false;
+
+  // react renderToPipeableStream pipe 到新的 passthrough 中
   const passthrough = new PassThrough({
     read() {
       if (!startedFlowing) {
         startedFlowing = true;
         pipe(passthrough);
       }
-    },
+    }
   });
 
   if (signal) {
-    signal.addEventListener("abort", abort, { once: true });
+    signal.addEventListener('abort', abort, { once: true });
   }
 
+  // 将 passthrough 转化成为 Web Streaming 格式
   const readable = Readable.toWeb(
     passthrough
   ) as unknown as ReactDOMServerReadableStream;
   readable.allReady = allReady.promise;
 
+  // 等待 shellReady promise 完成
   return shellReady.promise;
 };
